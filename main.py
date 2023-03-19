@@ -4,7 +4,7 @@ import shutil
 
 import threading
 import asyncio
-import server
+import server.server as server
 
 async def run(server, address='', port=8188, verbose=True, call_on_start=None):
     await asyncio.gather(server.start(address, port, verbose, call_on_start), server.publish_loop())

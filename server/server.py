@@ -3,6 +3,7 @@ import asyncio
 import aiohttp
 from aiohttp import web
 import mimetypes
+import server.nodes as nodes
 
 @web.middleware
 async def cache_control(request: web.Request, handler):
@@ -22,7 +23,7 @@ class PromptServer():
         self.app = web.Application(client_max_size=20971520, middlewares=[cache_control])
         self.sockets = dict()
         self.web_root = os.path.join(os.path.dirname(
-            os.path.realpath(__file__)), "web")
+            os.path.realpath(__file__)), "../web")
         routes = web.RouteTableDef()
         self.last_node_id = None
         self.client_id = None
@@ -31,6 +32,22 @@ class PromptServer():
         async def get_root(request):
             return web.FileResponse(os.path.join(self.web_root, "index.html"))
     
+        @routes.get("/object_info")
+        async def get_object_info(request):
+            out = {}
+            for x in nodes.NODE_CLASS_MAPPINGS:
+                obj_class = nodes.NODE_CLASS_MAPPINGS[x]
+                info = {}
+                info['input'] = obj_class.INPUT_TYPES()
+                info['output'] = obj_class.RETURN_TYPES
+                info['name'] = x #TODO
+                info['description'] = ''
+                info['category'] = 'sd'
+                if hasattr(obj_class, 'CATEGORY'):
+                    info['category'] = obj_class.CATEGORY
+                out[x] = info
+            return web.json_response(out)
+
         self.app.add_routes(routes)
         self.app.add_routes([
             web.static('/', self.web_root),
